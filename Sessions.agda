@@ -1,4 +1,4 @@
-module FirstOrder where
+module Sessions where
 
 open import Basics
 open import Size

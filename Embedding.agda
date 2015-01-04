@@ -1,7 +1,7 @@
 module Embbeding where
 
-open import FirstOrder
-open import FOEffLam
+open import Sessions
+open import Effects
 open import Context
 
 open import Data.List hiding (map)
