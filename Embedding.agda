@@ -1,4 +1,4 @@
-module Embbeding where
+module Embedding where
 
 open import Sessions
 open import Effects
