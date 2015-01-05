@@ -68,24 +68,22 @@ interpEff (In t ∷ xs) = ⊕ (("in" , ([ interpT t ]?∙ (interpEff xs))) ∷ [
 interpEff (Out t ∷ xs) = ⊕ (("out" , ([ interpT t ]!∙ (interpEff xs))) ∷ [])
 
 
-liftPure : forall {Γ Σ G S τ} ->
-   (p :  Γ * (Σ , S) |- proc → (Γ * (Σ , interpEff G) , ([ τ ]!∙ S) |- proc))
-     -> (Γ * ((Σ , [ τ ]!∙ S) , ([ sess (interpEff G) ]?∙ [ sess (interpEff G) ]!∙ end)) |- proc)
-liftPure = {!!}
 
 {- This definition is very explicit in parts to make it easier to understand -} 
-embedN : forall {Γ τ F G} 
+embedInterm : forall {Γ τ F G} 
                 -> (e : ioEff , Γ !- τ , F)
                 -> (map interpT Γ * ((Em , [ interpT τ ]!∙ end) , [ sess (interpEff (F ++ G)) ]?∙ [ sess (interpEff G) ]!∙ end) |- proc)
-embedN {G = G} (var {τ = τ} x) = 
-  let e = \p -> (inl here) !< var {Σ = Em , interpEff G} (interpMem x) >∙ p
-  in liftPure {G = G} {S = end} {τ = interpT τ} e
+embedInterm {Γ = Γ} {G = G} (var {τ = τ} x) = 
+   let esB = _<->∙_ {Γ = map interpT Γ} {S = interpEff G} {T = end} here (nil {n = 1}) 
+       e = (inr here) !< var {Γ = map interpT Γ} {Σ = Em , end} (interpMem x) >∙ esB
+       esA = (there (there here)) [ there here ]∙ e
+   in esA  
 
 -- nu q . ( [ m ]q | q(x) . [N]r) 
-embedN {Γ} {F = .(f ++ g)} {G} (letb {σ = σ} {τ} {f = f} {g = g} m n) rewrite (symm (assoc-list {a = f} {b = g} {c = G})) = 
-  let m0 = embedN {G = (g ++ G)} m 
+embedInterm {Γ} {F = .(f ++ g)} {G} (letb {σ = σ} {τ} {f = f} {g = g} m n) rewrite (symm (assoc-list {a = f} {b = g} {c = G})) = 
+  let m0 = embedInterm {G = (g ++ G)} m 
       
-      n0 = embedN {G = G} n
+      n0 = embedInterm {G = G} n
       n1 = weaken {S = end} n0
       n2 = here ?[-]∙ n1
 
@@ -121,9 +119,40 @@ embedN {Γ} {F = .(f ++ g)} {G} (letb {σ = σ} {τ} {f = f} {g = g} m n) rewrit
 
   in e3
   
-embedN (op Outp e) = {!!}
+embedInterm {Γ = Γ} {F = .(Out τ ∷ [])} {G = G} (op {τ' = τ} Outp e) = 
+       let  F = (Out τ ∷ G)
+            e0 = embedInterm {G = F} e
+            
+            ed = _<->∙_ {S = interpEff G} here (nil {n = 2})
+            ee = (inr here) !< unit {Γ = map interpT (Γ , τ)} {Σ = Em , end} >∙ ed
+            ef = (inl (there here)) !< var {Σ = Em , end} here >∙ ee
+            S = [ interpT τ ]!∙ (interpEff G)
+            eg = _◁_∙_ {Si = ("out" , S) ∷ []} here here ef
+            eh = (there here) [ here ]∙ eg
+            ei = (there (there (there here))) ?[-]∙ eh
+            ej = _<->∙_ {S = interpEff (Out τ ∷ G)} (there here) ei
+            ek = (there (there (there (there here)))) [ here ]∙ ej
+            el = par e0 ek
 
-embedN {Γ} {G = g} (nullary-op {τ = τ} Inp) = 
+            F' = sess (interpEff F)
+            Σ = (((((Em , ([ interpT τ ]!∙ end)) 
+                         , ([ F' ]?∙ ([ F' ]!∙ end)))
+                         , ([ unit ]!∙ end))
+                         , ([ interpT τ ]?∙ end))
+                         , ([ F' ]!∙ ([ F' ]?∙ end)))
+                         , ([ F' ]?∙ ([ sess (interpEff G) ]!∙ end))
+
+            em = restrict {Σ = Σ} el (th (th (th (th (here))))) (there here) {refl}
+
+            Σ1 = (((Em , ([ interpT τ ]!∙ end)) 
+                       , ([ unit ]!∙ end))
+                       , ([ interpT τ ]?∙ end))
+                       , ([ F' ]?∙ ([ sess (interpEff G) ]!∙ end))
+
+            en = restrict {Σ = Σ1} em (th (th (th here))) (th here) {refl}
+       in en
+
+embedInterm {Γ} {G = g} (nullary-op {τ = τ} Inp) = 
        let esB = _<->∙_ {Γ = map interpT (Γ , τ)} {S = interpEff g} {T = end} here (nil {n = 1}) 
            e0 = (inr here) !< var {Γ = map interpT (Γ , τ)} {Σ = Em , end} here >∙ esB
            e1 = (there here) ?[-]∙ e0
@@ -132,22 +161,22 @@ embedN {Γ} {G = g} (nullary-op {τ = τ} Inp) =
            esA = (there (there here)) [ here ]∙ e2
        in esA
 
-embedN {Γ} {F = .[]} {G = g} unit rewrite right-unit-list {e = g} = 
-      let esB = _<->∙_ {Γ = map interpT Γ} {S = interpEff g} {T = end} here (nil {n = 1}) 
+embedInterm {Γ} {F = .[]} {G} unit rewrite right-unit-list {e = G} = 
+      let esB = _<->∙_ {Γ = map interpT Γ} {S = interpEff G} {T = end} here (nil {n = 1}) 
           e = (inr here) !< unit {Σ = Em , end} >∙ esB
           esA = (there (there here)) [ there here ]∙ e
       in esA
 
-embedN {Γ} {G = g} nzero = 
-   let e = embedPure nzero
-       e' = weaken {S = end} e
-       esB = _<->∙_ {Γ = map interpT Γ} {S = interpEff g} {T = end} here e'
-       
-   in {!!}
-embedN (nsucc e) = {!!}
+embedInterm {Γ} {F = .[]} {G} nzero rewrite right-unit-list {e = G} = 
+      let esB = _<->∙_ {Γ = map interpT Γ} {S = interpEff G} {T = end} here (nil {n = 1}) 
+          e = (inr here) !< nzero {Σ = Em , end} >∙ esB
+          esA = (there (there here)) [ there here ]∙ e
+      in esA
+
+embedInterm (nsucc e) = {!!}
 
 {- 
-embedN : forall {Γ τ F G} 
+embedInterm : forall {Γ τ F G} 
                 -> (e : ioEff , Γ !- τ , F)
                 -> (map interpT Γ * ((Em , [ interpT τ ]!∙ end) , [ sess (interpEff (F ++ G)) ]?∙ [ sess (interpEff G) ]!∙ end) |- proc)
 -}
@@ -156,7 +185,7 @@ embed : forall {Γ τ F}
                -> (e : ioEff , Γ !- τ , F)
                -> (map interpT Γ) * ((Em , [ interpT τ ]!∙ end) , interpEff F) |- proc
 embed {Γ} {τ} {F} e = 
-          let p = cong-coerce (\f -> map interpT Γ * ((Em , ([ interpT τ ]!∙ end)) , ([ sess (interpEff f) ]?∙ ([ sess end ]!∙ end))) |- proc) ((Effect.right-unit ioEff) {e = F}) (embedN {G = []} e) 
+          let p = cong-coerce (\f -> map interpT Γ * ((Em , ([ interpT τ ]!∙ end)) , ([ sess (interpEff f) ]?∙ ([ sess end ]!∙ end))) |- proc) ((Effect.right-unit ioEff) {e = F}) (embedInterm {G = []} e) 
               j0 = nil {n = 2}
               j1 = here [ here ]∙ j0
               j2 = _<->∙_ {S = interpEff F} here j1
@@ -164,39 +193,3 @@ embed {Γ} {τ} {F} e =
               e1 = restrict e0 (there (there here)) (there here) {refl}
           in e1
 
-{- OLD
-
-embed : forall {Γ τ f} -> (e : ioEff , Γ !- τ , f) 
-                       -> (map interpT Γ * ((Em , interpEff f ), [ interpT τ ]!∙ end) |- proc)
-embed (var x) = (inl here) !< var {Σ = Em , interpEff []} (interpMem x) >∙ (nil {n = 1})
-embed (letb m n) = {!!}
-embed {Γ} (op {τ' = τ'} Outp e) = 
-
-  let e0 = (inl here) !< unit {Σ = (Em , end) , interpEff []} >∙ (nil {n = 1})
-      e1 = (inl (there here)) !< var {Γ = map interpT (Γ , τ')} {Σ = Em} here >∙ e0
-      S = [ interpT τ' ]!∙ end
-      e2 = _◁_∙_ {Si = ("out" , S) ∷ []} here here e1 
-      e3 = (there (there here)) ?[-]∙ e2
-      e' = embedPure e 
-      en = par e3 e'
-      en' = restrict en here here {refl}
-  
-  in exchg en'
-
-embed {Γ} (nullary-op {τ = τ} Inp) = 
-  let e0 = (inl here) !< var {Γ = map interpT (Γ , τ)} {Σ = Em , interpEff []} here >∙ (nil {n = 1})
-      e1 = (there here) ?[-]∙ e0
-      S = [ interpT τ ]?∙ end
-      e2 = _◁_∙_ {Si = ("in" , S) ∷ []} here here e1 
-  in exchg e2
-
-embed unit = (inl here) !< unit {Σ = Em , interpEff []} >∙ (nil {n = 1})
-embed nzero = (inl here) !< nzero {Σ = Em , interpEff []} >∙ (nil {n = 1})
-embed {Γ} (nsucc e) = let e0 = embedPure e  
-                          e1 = (inl here) !< nsucc {Σ = (Em , end) , end} (var {Γ = map interpT Γ , nat} here) >∙ (nil {n = 1}) 
-                          e2 = (there here) ?[-]∙ e1
-                          ep = par e0 e2
-                          ep' = restrict ep here (there (there here)) {refl}
-                      in ep'
-
--}

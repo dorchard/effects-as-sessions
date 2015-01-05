@@ -84,8 +84,6 @@ mutual
 
       _◁_∙_ : forall {Γ Σ S n} {Si : Vec (Pair String SType) n}
 
-                         --(k : (pi2 S) <: Σ) (j : Fin n) 
-                         --(p : Γ * Σ |- proc) {mem : Si [ j ]= S}
                          (k : (pi2 S) <: Σ) (mem : S ∈ Si) 
                          (p : Γ * Σ |- proc) 
                       -> -----------------------------------------------
