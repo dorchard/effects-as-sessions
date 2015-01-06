@@ -1,24 +1,36 @@
 module Effects where
 
+{-
+
+  This file defines the 'effect calculus'. A simple imperative 
+  language that is parameterised by an effect algebra and
+  effectful operations. 
+
+-}
+
+
 open import Basics
-open import Relation.Binary.PropositionalEquality using (trans;cong;inspect) -- hiding (subst)
+open import Relation.Binary.PropositionalEquality using (trans;cong;inspect) 
 open import Data.Nat
 open import Data.List 
 open import Context
 open import Data.Maybe
 
-infixr 3 _,_!-_,_
-
+-- Value type
 data Type : Set where
   nat   : Type
   unit  : Type
 
+-- Effect algebra
 record Effect : Set₁ where
     infixl 7 _•_
     field
+      {- Monoid -}
       Carrier  : Set
       _•_      : Carrier -> Carrier -> Carrier
       I        : Carrier
+
+      -- Efectful operations
       operations : Maybe (Pair (Context Type) Type) -> Context Type -> Type -> Carrier -> Set
 
       right-unit : forall {e : Carrier} -> (e • I) ≡ e
@@ -27,7 +39,8 @@ record Effect : Set₁ where
 
 open Effect
 
-
+{- The data type of well-typed effect calculus terms -}
+infixr 3 _,_!-_,_
 data _,_!-_,_ (eff : Effect) : (Gam : Context Type) -> Type -> (Carrier eff) -> Set where
   
   var : forall {Γ τ}   (x : τ <: Γ) 
@@ -42,15 +55,17 @@ data _,_!-_,_ (eff : Effect) : (Gam : Context Type) -> Type -> (Carrier eff) -> 
 
 
   op : forall {Γ τ f Γ' τ'} 
-                        (op : operations eff (just (Γ' , τ')) Γ τ f) (x : eff , Γ' !- τ' , (I eff))
-                     -> --------------------------------------------------------------------------
-                          eff , Γ !- τ , f
+                (op : operations eff (just (Γ' , τ')) Γ τ f) (x : eff , Γ' !- τ' , (I eff))
+             -> --------------------------------------------------------------------------
+                     eff , Γ !- τ , f
 
-  nullary-op : forall {Γ τ f} 
-                           (op : operations eff nothing Γ τ f)
-                     -> --------------------------------------
-                            eff , Γ !- τ , f
+  const : forall {Γ τ f} 
+                (op : operations eff nothing Γ τ f)
+             -> --------------------------------------
+                     eff , Γ !- τ , f
 
+
+  {- Default constants and operations -}
 
   unit : forall {Γ} -> ---------------------------
                         eff , Γ !- unit , (I eff)
