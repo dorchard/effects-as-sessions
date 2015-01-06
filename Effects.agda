@@ -65,38 +65,38 @@ data _,_!-_,_ (eff : Effect) : (Gam : Context Type) -> Type -> (Carrier eff) -> 
                                eff , Γ !- nat , (I eff)
 
 
-{- IO Effects -}
+{- State Effects -}
 
 mutual
-  ioEff = record
-    { Carrier    = List IOEff;
+  stEff = record
+    { Carrier    = List StateEff;
       _•_        = _++_;
       I          = [];
-      operations = IOOps;
+      operations = STOps;
 
       left-unit = refl;
       right-unit = right-unit-list
       --assoc = assoc-list
      }
 
-  data IOEff : Set where
-    In  : (t : Type) -> IOEff
-    Out  : (t : Type) -> IOEff
+  data StateEff : Set where
+    Get  : (t : Type) -> StateEff
+    Put  : (t : Type) -> StateEff
 
-  right-unit-list : forall {e : List IOEff} -> (e ++ []) ≡ e
+  right-unit-list : forall {e : List StateEff} -> (e ++ []) ≡ e
   right-unit-list {[]} = refl
   right-unit-list {x ∷ xs} = cong (\xs -> x ∷ xs) (right-unit-list {xs})
 
-  assoc-list : forall {a b c : Carrier ioEff} -> ((_•_ ioEff) a ((_•_ ioEff) b c)) ≡ ((_•_ ioEff) ((_•_ ioEff) a b) c)
+  assoc-list : forall {a b c : Carrier stEff} -> ((_•_ stEff) a ((_•_ stEff) b c)) ≡ ((_•_ stEff) ((_•_ stEff) a b) c)
   assoc-list {[]} = refl
   assoc-list {x ∷ xs} = cong (\xs -> x ∷ xs) (assoc-list {xs})
 
-  single : IOEff -> List IOEff
+  single : StateEff -> List StateEff
   single x = Data.List.[ x ]
 
-  pure : List IOEff
+  pure : List StateEff
   pure = Data.List.[]
 
-  data IOOps : Maybe (Pair (Context Type) Type)  -> Context Type -> Type -> List IOEff -> Set where
-    Inp  : forall {Γ t} -> IOOps nothing Γ t (single (In t))
-    Outp : forall {Γ t} -> IOOps (just (Γ , t)) Γ unit (single (Out t))
+  data STOps : Maybe (Pair (Context Type) Type)  -> Context Type -> Type -> List StateEff -> Set where
+    Get  : forall {Γ t} -> STOps nothing Γ t (single (Get t))
+    Put  : forall {Γ t} -> STOps (just (Γ , t)) Γ unit (single (Put t))
