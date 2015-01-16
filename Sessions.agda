@@ -145,3 +145,23 @@ mutual
                            -> ------------------------ 
                                 Γ * Σ |- val nat
 
+{- Structural transformations on session terms -}
+postulate
+  weaken : forall {Γ Σ wS pt} -> (e : Γ * Σ |- pt) -> Γ * (Σ , wS) |- pt
+  exchg : forall {Γ Σ S T pt} -> (e : Γ * ((Σ , S), T) |- pt) -> Γ * ((Σ , T) , S) |- pt
+  weakenE : forall {Γ Σ S T pt} -> (e : Γ * (Σ , S) |- pt) -> Γ * ((Σ , T), S) |- pt
+
+{- Example embedding of [ABS] -}
+
+abs : forall {Γ σ τ} 
+             -> (m : (Γ , σ) * (Em , [ τ ]!∙ end) |- proc) 
+             -> (Γ * (Em , [ sess ([ σ ]!∙ [ sess ([ τ ]!∙ end) ]!∙ end) ]!∙ end) |- proc)
+abs {Γ} {σ} {τ} m = 
+        let  S = [ τ ]!∙ end 
+             T = [ sess ([ τ ]!∙ end) ]?∙ end
+             e0 = _[_]∙_ here here (weaken {wS = end} m)
+             e1 = _?[-]∙_ here e0
+             e1' = weaken e1
+             e2 = _<->∙_ here e1'
+             e = restrict e2 (there (there here)) here {refl}
+        in e

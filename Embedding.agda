@@ -39,12 +39,6 @@ emptyInverseL {x ∷ f} ()
 emptyInverseR : forall {f g} -> (f ++ g ≡ pure) -> g ≡ pure
 emptyInverseR {[]} refl = refl
 emptyInverseR {x ∷ f} ()
-
-{- Structural transformations on session terms -}
-postulate
-  weaken : forall {Γ Σ wS pt} -> (e : Γ * Σ |- pt) -> Γ * (Σ , wS) |- pt
-  exchg : forall {Γ Σ S T pt} -> (e : Γ * ((Σ , S), T) |- pt) -> Γ * ((Σ , T) , S) |- pt
-  weakenE : forall {Γ Σ S T pt} -> (e : Γ * (Σ , S) |- pt) -> Γ * ((Σ , T), S) |- pt
   
 {- Specialised embedding for a pure a term -}
 embedPure' : forall {Γ τ f}
