@@ -149,6 +149,7 @@ mutual
 postulate
   weaken : forall {Γ Σ wS pt} -> (e : Γ * Σ |- pt) -> Γ * (Σ , wS) |- pt
   exchg : forall {Γ Σ S T pt} -> (e : Γ * ((Σ , S), T) |- pt) -> Γ * ((Σ , T) , S) |- pt
+  exchgE : forall {Γ Σ R S T pt} -> (e : Γ * (((Σ , S), T), R) |- pt) -> Γ * (((Σ , T) , S), R) |- pt
   weakenE : forall {Γ Σ S T pt} -> (e : Γ * (Σ , S) |- pt) -> Γ * ((Σ , T), S) |- pt
 
 {- Example embedding of [ABS] -}
