@@ -28,6 +28,8 @@ record Effect : Set₁ where
       {- Monoid -}
       Carrier  : Set
       _•_      : Carrier -> Carrier -> Carrier
+      _⊕_      : Carrier -> Carrier -> Carrier
+      _*       : Carrier -> Carrier
       I        : Carrier
 
       -- Efectful operations
@@ -36,6 +38,8 @@ record Effect : Set₁ where
       right-unit : forall {e : Carrier} -> (e • I) ≡ e
       left-unit  : forall {e : Carrier} -> (I • e) ≡ e
       --assoc      : forall {a b c : Carrier} -> (a • (b • c)) ≡ ((a • b) • c)
+      dist       : forall {f g e : Carrier} -> (f ⊕ g) • e ≡ (f • e) ⊕ (g • e)
+      fixy       : forall {f : Carrier} -> f * ≡ f • (f *)
 
 open Effect
 
@@ -63,6 +67,13 @@ data _,_!-_,_ (eff : Effect) : (Gam : Context Type) -> Type -> (Carrier eff) -> 
                 (op : operations eff nothing Γ τ f)
              -> --------------------------------------
                      eff , Γ !- τ , f
+
+  case : forall {Γ τ f g h}
+                (m  : eff , Γ !- nat , f)
+                (n1 : eff , Γ !- τ   , g)
+                (n2 : eff , Γ !- τ   , h)
+             -> -----------------------------
+                   eff , Γ !- τ , ((_•_ eff) f ((_⊕_ eff) g h))
 
 
   {- Default constants and operations -}
