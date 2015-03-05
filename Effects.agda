@@ -16,6 +16,8 @@ open import Data.List
 open import Context
 open import Data.Maybe
 
+open import NearSemiring
+
 -- Value type
 data Type : Set where
   nat   : Type
