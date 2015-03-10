@@ -16,7 +16,7 @@ open import Data.List
 open import Context
 open import Data.Maybe
 
-open import NearSemiring
+open import pwdNearSemiring
 
 -- Value type
 data Type : Set where

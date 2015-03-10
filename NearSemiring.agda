@@ -22,12 +22,19 @@ klist_assoc : forall {A : Set} {x y z : ListT A} -> (x ++ (y ++ z)) ≡ ((x ++ y
 klist_assoc {x = Last a b} = refl
 klist_assoc {x = x ∷ xs} {y} {z} rewrite klist_assoc {x = xs} {y = y} {z = z} = refl 
 
---klist_assoc_cons : forall {A : Set} {x 
+--klist_assoc_unit : forall {A : Set} {
 
 consEnd : forall {A : Set} -> ListT A -> A -> ListT A
 consEnd (Last x y) z = x ∷ (Last y z)
 consEnd (x ∷ xs)   z = x ∷ (consEnd xs z)
 
+consEndDistrib : forall {A : Set} {x y : ListT A} {z : A} -> consEnd (x ++ y) z ≡ x ++ (consEnd y z)
+consEndDistrib {x = Last x y} = refl
+consEndDistrib {x = x ∷ xs} = cong (\w -> x ∷ w) (consEndDistrib {x = xs})
+
+consDoub : forall {A : Set} {xs : ListT A} {a b : A} -> consEnd (consEnd xs a) b ≡ xs ++ Last a b
+consDoub {xs = Last x xy} = refl
+consDoub {xs = x ∷ xs} = cong (\w -> x ∷ w) (consDoub {xs = xs})
 
 data NSR (A : Set) : Set where
   nil : NSR A
@@ -74,6 +81,8 @@ mutual
   lmapUnit {l = (cons x xs) ∷ ys} rewrite (unitR {f = xs}) | lmapUnit {l = ys} = refl
   lmapUnit {l = br x ∷ xs} rewrite (lmapUnit {l = x}) | lmapUnit {l = xs} = refl
 
+--  lmapAppendDistrib : forall {bs : ListT (NSR A)   lmap (x ∷ (f ++ gs)) (br 
+
   unitR : forall {A : Set} {f : NSR A} -> f • nil ≡ f
   unitR {f = nil} = refl
   unitR {f = cons x xs} = cong (\z -> cons x z) (unitR {f = xs})
@@ -98,43 +107,10 @@ lemma2 {x = nil ∷ xs} {y} {ys} rewrite lemma2 {x = xs} {y} {ys} = refl
 lemma2 {x = (cons z zs) ∷ xs} {y} {ys} rewrite lemma2 {x = xs} {y} {ys} = refl
 lemma2 {x = br x ∷ xs} {y} {ys } rewrite lemma2 {x = xs} {y} {ys} = refl
 
-lemma3 : forall {A : Set} {x : ListT (NSR A)} {b : ListT (NSR A)} -> lmap (consEnd x nil) (br b) ≡ consEnd (lmap x (br b)) (br b)
-lemma3 = {!!}
-
-
 consEndLemma : forall {A : Set} {y : NSR A} {b : ListT (NSR A)} {c : ListT (NSR A)} -> b ++ (y ∷ c) ≡ ((consEnd b y) ++ c)
 consEndLemma {b = Last x x₁} = refl
 consEndLemma {y = y} {b = x ∷ xs} {c} rewrite consEndLemma {y = y} {b = xs} {c = c} = refl
 
-{-
-consEndLemma2 : forall {A : Set} {x : NSR A} {xs b : ListT (NSR A)} -> lmap (x ∷ consEnd xs nil) (br b) ≡ lmap (x ∷ xs) (br b) ++ b
-consEndLemma2 {x = nil} {Last nil nil} {Last c d} = refl
-consEndLemma2 {x = nil} {Last nil (cons x z)} {Last c d} = refl
-consEndLemma2 {x = nil} {Last nil (br x)} {Last c d} = refl
-consEndLemma2 {x = nil} {Last (cons x y) nil} {Last c d} = refl
-consEndLemma2 {x = nil} {Last (cons x y) (cons x₁ z)} {Last c d} = refl
-consEndLemma2 {x = nil} {Last (cons x y) (br x₁)} {Last c d} = refl
-consEndLemma2 {x = nil} {Last (br x) nil} {Last c d} = refl
-consEndLemma2 {x = nil} {Last (br x) (cons x₁ z)} {Last c d} = refl
-consEndLemma2 {x = nil} {Last (br x) (br x₁)} {Last c d} = refl
-consEndLemma2 {x = nil} {Last nil nil} {x ∷ Last x₁ x₂} = refl
-consEndLemma2 {x = nil} {Last nil nil} {x ∷ (x₁ ∷ b)} rewrite consEndLemma2 {x = nil} {xs = Last nil nil} {b = (x₁ ∷ b)} = {!!}
-{- 
-(b ++ (x :: (b ++ (x :: (b ++ (x :: b))))))
-
-
-
-((b ++ (x :: (b ++ (x :: b)))) ++ (x :: b))
--}
-
-consEndLemma2 {x = nil} {Last nil (cons x z)} {x₁ ∷ b} = {!!}
-consEndLemma2 {x = nil} {Last nil (br x)} {x₁ ∷ b} = {!!}
-consEndLemma2 {x = nil} {Last (cons x y) z} {x₁ ∷ b} = {!!}
-consEndLemma2 {x = nil} {Last (br x) z} {x₁ ∷ b} = {!!}
-consEndLemma2 {x = cons x x₁} {Last a b} = {!!}
-consEndLemma2 {x = br x} {Last a b} = {!!}
-consEndLemma2 {xs = x₁ ∷ xs} = {!!}
--}
 
 distribR : {A : Set} {f h : ListT (NSR A)} -> (((br f) ⊕ nil) • (br h)) ≡ ((br f) • (br h)) ⊕ (br h)
 distribR {f = Last nil nil} {h = h} rewrite klist_assoc {x = h} {y = h} {z = h} = refl
@@ -165,8 +141,165 @@ distribR {f = br x ∷ xs} {h ∷ hs} = let ih = distribR {f = xs} {h = h ∷ hs
                                         ih' = cong (\w -> br (br (lmap x (br (h ∷ hs))) ∷ w)) (brInj ih)
                                     in ih'
 
-postulate
-  distribR2 : {A : Set} {f : ListT (NSR A)} {g h : NSR A} -> (((br f) ⊕ g) • h) ≡ ((br f) • h) ⊕ (g • h)
+distribR2 : {A : Set} {f : ListT (NSR A)} {g h : NSR A} -> (((br f) ⊕ g) • h) ≡ ((br f) • h) ⊕ (g • h)
+distribR2 {f = f} {g} {h = nil} rewrite (unitR {f = br f ⊕ g}) | (unitR {f = g}) | (lmapUnit {l = f}) = refl
+distribR2 {f = Last nil nil} {nil} {cons x xs} = refl
+distribR2 {f = Last nil (cons x b)} {nil} {cons x₁ xs} = refl
+distribR2 {f = Last nil (br x)} {nil} {cons x₁ xs} = refl
+distribR2 {f = Last (cons x a) nil} {nil} {cons x₁ xs} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {nil} {cons x₂ xs} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {nil} {cons x₂ xs} = refl
+distribR2 {f = Last (br x) nil} {nil} {cons x₁ xs} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {nil} {cons x₂ xs} = refl
+distribR2 {f = Last (br x) (br x₁)} {nil} {cons x₂ xs} = refl
+distribR2 {f = Last nil nil} {cons y ys} {cons x xs} = refl
+distribR2 {f = Last nil (cons x b)} {cons y ys} {cons x₁ xs} = refl
+distribR2 {f = Last nil (br x)} {cons y ys} {cons x₁ xs} = refl
+distribR2 {f = Last (cons x a) nil} {cons y ys} {cons x₁ xs} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {cons y ys} {cons x₂ xs} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {cons y ys} {cons x₂ xs} = refl
+distribR2 {f = Last (br x) nil} {cons y ys} {cons x₁ xs} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {cons y ys} {cons x₂ xs} = refl
+distribR2 {f = Last (br x) (br x₁)} {cons y ys} {cons x₂ xs} = refl
+distribR2 {f = Last nil nil} {br bs} {cons x xs} = refl
+distribR2 {f = Last nil (cons x b)} {br bs} {cons x₁ xs} = refl
+distribR2 {f = Last nil (br x)} {br bs} {cons x₁ xs} = refl
+distribR2 {f = Last (cons x a) nil} {br bs} {cons x₁ xs} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {br bs} {cons x₂ xs} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {br bs} {cons x₂ xs} = refl
+distribR2 {f = Last (br x) nil} {br bs} {cons x₁ xs} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {br bs} {cons x₂ xs} = refl
+distribR2 {f = Last (br x) (br x₁)} {br bs} {cons x₂ xs} = refl
+distribR2 {f = nil ∷ f} {nil} {cons y ys} rewrite lemma2 {x = f} {y = y} {ys = ys} = refl 
+distribR2 {f = nil ∷ f} {cons x xs} {cons y ys} = let ih2 = distribR2 {f = f} {g = cons x xs} {h = cons y ys} 
+                                                  in cong (\z -> br (cons y ys ∷ z)) (brInj ih2)
+distribR2 {f = nil ∷ f} {br x} {cons y ys} = let ih2 = distribR2 {f = f} {g = br x} {h = cons y ys} 
+                                             in cong (\z -> br (cons y ys ∷ z)) (brInj ih2)
+distribR2 {f = cons x xs ∷ f} {nil} {cons y ys} = let ih = distribR2 {f = f} {g = nil} {h = cons y ys}
+                                                  in cong (\z -> br (cons x (xs • cons y ys) ∷ z)) (brInj ih)
+distribR2 {f = cons x xs ∷ f} {cons g gs} {cons y ys} = 
+                                                  let ih = distribR2 {f = f} {g = cons g gs} {h = cons y ys}
+                                                  in cong (\z -> br (cons x (xs • cons y ys) ∷ z)) (brInj ih)
+distribR2 {f = cons x xs ∷ f} {br bs} {cons y ys} = let ih = distribR2 {f = f} {g = br bs} {h = cons y ys}
+                                                    in cong (\z -> br (cons x (xs • cons y ys) ∷ z)) (brInj ih)
+distribR2 {f = br x ∷ f} {nil} {cons y ys} rewrite lemma2 {x = f} {y = y} {ys = ys} = refl
+distribR2 {f = br x ∷ f} {cons g gs} {cons y ys} = let ih = distribR2 {f = f} {g = cons g gs} {cons y ys} 
+                                                   in cong (\z -> br (br (lmap x (cons y ys)) ∷ z)) (brInj ih)
+distribR2 {f = br a ∷ f} {br b} {cons y ys} = let ih = distribR2 {f = f} {g = br b} {cons y ys}
+                                              in cong (\z -> br (br (lmap a (cons y ys)) ∷ z)) (brInj ih)
+distribR2 {f = Last nil nil} {nil} {br (Last a b)} = refl
+distribR2 {f = Last nil (cons x v)} {nil} {br (Last a b)} = refl
+distribR2 {f = Last nil (br x)} {nil} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) nil} {nil} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) (cons x₁ v)} {nil} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) (br x₁)} {nil} {br (Last a b)} = refl
+distribR2 {f = Last (br x) nil} {nil} {br (Last a b)} = refl
+distribR2 {f = Last (br x) (cons x₁ v)} {nil} {br (Last a b)} = refl
+distribR2 {f = Last (br x) (br x₁)} {nil} {br (Last a b)} = refl
+distribR2 {f = Last nil nil} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last nil (cons x v)} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last nil (br x)} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) nil} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) (cons x₁ v)} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) (br x₁)} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last (br x) nil} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last (br x) (cons x₁ v)} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last (br x) (br x₁)} {cons x₂ g} {br (Last a b)} = refl
+distribR2 {f = Last nil nil} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last nil (cons x v)} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last nil (br x)} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) nil} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) (cons x₁ v)} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last (cons x u) (br x₁)} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last (br x) nil} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last (br x) (cons x₁ v)} {br x₂} {br (Last a b)} = refl
+distribR2 {f = Last (br x) (br x₁)} {br x₂} {br (Last a b)} = refl
+distribR2 {f = nil ∷ f} {nil} {br (Last y z)} = let ih = distribR2 {f = f} {g = nil} {h = br (Last y z)}
+                                                in cong (\w -> br (y ∷ (z ∷ w))) (brInj ih)
+distribR2 {f = (cons x xs) ∷ f} {nil} {br (Last a b)} = let ih = distribR2 {f = f} {g = nil} {h = br (Last a b)}
+                                                        in cong (\w -> br (cons x (xs • br (Last a b)) ∷ w)) (brInj ih)
+distribR2 {f = br x ∷ f} {nil} {br (Last a b)} = let ih = distribR2 {f = f} {g = nil} {h = br (Last a b)}
+                                                 in cong (\w -> br (br (lmap x (br (Last a b))) ∷ w)) (brInj ih)
+
+distribR2 {f = nil ∷ f} {cons x xs} {br (Last a b)} = let ih = distribR2 {f = f} {g = cons x xs} {h = br (Last a b)}
+                                                      in cong (\w -> br (a ∷ (b ∷ w))) (brInj ih)
+distribR2 {f = (cons y ys) ∷ f} {cons x xs} {br (Last a b)} = let ih = distribR2 {f = f} {g = cons x xs} {h = br (Last a b)}
+                                                              in cong (\w -> br (cons y (ys • br (Last a b)) ∷ w)) (brInj ih)
+distribR2 {f = br bs ∷ f} {cons x xs} {br (Last a b)} = let ih = distribR2 {f = f} {g = cons x xs} {h = br (Last a b)}
+                                                        in cong (\w -> br (br (lmap bs (br (Last a b))) ∷ w)) (brInj ih)
+
+distribR2 {f = nil ∷ f} {br bs} {br (Last a b)} = let ih = distribR2 {f = f} {g = br bs} {h = br (Last a b)}
+                                                  in cong (\w -> br (a ∷ (b ∷ w))) (brInj ih)
+distribR2 {f = cons y ys ∷ f} {br bs} {br (Last a b)} = let ih = distribR2 {f = f} {g = br bs} {h = br (Last a b)}
+                                                        in cong (\w -> br (cons y (ys • br (Last a b)) ∷ w)) (brInj ih)
+distribR2 {f = br bs ∷ f} {br gbs} {br (Last a b)} = let ih = distribR2 {f = f} {g = br gbs} {h = br (Last a b)}
+                                                     in cong (\w -> br (br (lmap bs (br (Last a b))) ∷ w)) (brInj ih)
+distribR2 {f = Last nil nil} {nil} {br (h ∷ hs)} rewrite klist_assoc {x = hs} {y = h ∷ hs} {z = h ∷ hs} = refl
+distribR2 {f = Last nil (cons x b)} {nil} {br (h ∷ hs)} rewrite consEndLemma {y = cons x (b • br (h ∷ hs))} {b = hs} {c = h ∷ hs} = refl
+distribR2 {f = Last nil (br x)} {nil} {br (h ∷ hs)} rewrite consEndLemma {y = br (lmap x (br (h ∷ hs)))} {b = hs} {c = h ∷ hs} = refl
+distribR2 {f = Last (cons x a) nil} {nil} {br (h ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {nil} {br (h ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {nil} {br (h ∷ hs)} = refl
+distribR2 {f = Last (br x) nil} {nil} {br (h ∷ hs)} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {nil} {br (h ∷ hs)} = refl
+distribR2 {f = Last (br x) (br x₁)} {nil} {br (h ∷ hs)} = refl
+distribR2 {f = Last nil nil} {cons g gs} {br (nil ∷ hs)} rewrite consEndDistrib {x = hs} {y = nil ∷ hs} {z = cons g (gs • br (nil ∷ hs))} = refl
+distribR2 {f = Last nil (cons x b)} {cons g gs} {br (nil ∷ hs)} rewrite consDoub {xs = hs} {a = cons x (b • br (nil ∷ hs))} {b = cons g (gs • br (nil ∷ hs))} = refl
+distribR2 {f = Last nil (br x)} {cons g gs} {br (nil ∷ hs)} rewrite consDoub {xs = hs} {a = br (lmap x (br (nil ∷ hs)))} {b = cons g (gs • br (nil ∷ hs))} = refl
+distribR2 {f = Last (cons x a) nil} {cons g gs} {br (nil ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {cons g gs} {br (nil ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {cons g gs} {br (nil ∷ hs)} = refl
+distribR2 {f = Last (br x) nil} {cons g gs} {br (nil ∷ hs)} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {cons g gs} {br (nil ∷ hs)} = refl
+distribR2 {f = Last (br x) (br x₁)} {cons g gs} {br (nil ∷ hs)} = refl
+distribR2 {f = Last nil nil} {cons g gs} {br (cons x h ∷ hs)} rewrite consEndDistrib {x = hs} {y = cons x h ∷ hs} {z = cons g (gs • br (cons x h ∷ hs))} = refl
+distribR2 {f = Last nil (cons x b)} {cons g gs} {br (cons x₁ h ∷ hs)} rewrite consDoub {xs = hs} {a = cons x (b • br (cons x₁ h ∷ hs))} {b = cons g (gs • br (cons x₁ h ∷ hs))} = refl
+distribR2 {f = Last nil (br x)} {cons g gs} {br (cons x₁ h ∷ hs)} rewrite consDoub {xs = hs} {a = br (lmap x (br (cons x₁ h ∷ hs)))} {b = cons g (gs • br (cons x₁ h ∷ hs))} = refl
+distribR2 {f = Last (cons x a) nil} {cons g gs} {br (cons x₁ h ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {cons g gs} {br (cons x₂ h ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {cons g gs} {br (cons x₂ h ∷ hs)} = refl
+distribR2 {f = Last (br x) nil} {cons g gs} {br (cons x₁ h ∷ hs)} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {cons g gs} {br (cons x₂ h ∷ hs)} = refl
+distribR2 {f = Last (br x) (br x₁)} {cons g gs} {br (cons x₂ h ∷ hs)} = refl
+distribR2 {f = Last nil nil} {cons g gs} {br (br x ∷ hs)} rewrite consEndDistrib {x = hs} {y = (br x ∷ hs)} {z = cons g (gs • br (br x ∷ hs))} = refl
+distribR2 {f = Last nil (cons x b)} {cons g gs} {br (br x₁ ∷ hs)} rewrite consDoub {xs = hs} {a = cons x (b • br (br x₁ ∷ hs))} {b = cons g (gs • br (br x₁ ∷ hs))} = refl
+distribR2 {f = Last nil (br x)} {cons g gs} {br (br x₁ ∷ hs)} rewrite consDoub {xs = hs} {a = br (lmap x (br (br x₁ ∷ hs)))} {b = cons g (gs • br (br x₁ ∷ hs))} = refl
+distribR2 {f = Last (cons x a) nil} {cons g gs} {br (br x₁ ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {cons g gs} {br (br x₂ ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {cons g gs} {br (br x₂ ∷ hs)} = refl
+distribR2 {f = Last (br x) nil} {cons g gs} {br (br x₁ ∷ hs)} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {cons g gs} {br (br x₂ ∷ hs)} = refl
+distribR2 {f = Last (br x) (br x₁)} {cons g gs} {br (br x₂ ∷ hs)} = refl
+distribR2 {f = Last nil nil} {br gs} {br (h ∷ hs)} rewrite klist_assoc {x = hs} {y = h ∷ hs} {z = lmap gs (br (h ∷ hs))} = refl
+distribR2 {f = Last nil (cons x b)} {br gs} {br (h ∷ hs)} rewrite consEndLemma {y = cons x (b • br (h ∷ hs))} {b = hs} {c = lmap gs (br (h ∷ hs))} = refl
+distribR2 {f = Last nil (br x)} {br gs} {br (h ∷ hs)} rewrite consEndLemma {y = br (lmap x (br (h ∷ hs)))} {b = hs} {c = lmap gs (br (h ∷ hs))} = refl
+distribR2 {f = Last (cons x a) nil} {br gs} {br (h ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (cons x₁ b)} {br gs} {br (h ∷ hs)} = refl
+distribR2 {f = Last (cons x a) (br x₁)} {br gs} {br (h ∷ hs)} = refl
+distribR2 {f = Last (br x) nil} {br gs} {br (h ∷ hs)} = refl
+distribR2 {f = Last (br x) (cons x₁ b)} {br gs} {br (h ∷ hs)} = refl
+distribR2 {f = Last (br x) (br x₁)} {br gs} {br (h ∷ hs)} = refl
+distribR2 {f = nil ∷ f} {nil} {br (h ∷ hs)} rewrite (symm (klist_assoc {x = hs} {y = lmap f (br (h ∷ hs))} {z = h ∷ hs}))
+             = let ih = distribR2 {f = f} {g = nil} {h = br (h ∷ hs)}
+               in cong (\w -> br (h ∷ (hs ++ w))) (brInj ih)
+distribR2 {f = (cons x xs) ∷ f} {nil} {br (h ∷ hs)} 
+             = let ih = distribR2 {f = f} {g = nil} {h = br (h ∷ hs)}
+               in cong (\w -> br (cons x (xs • br (h ∷ hs)) ∷ w)) (brInj ih)
+distribR2 {f = br x ∷ f} {nil} {br (h ∷ hs)} 
+             = let ih = distribR2 {f = f} {g = nil} {h = br (h ∷ hs)}
+               in cong (\w -> br (br (lmap x (br (h ∷ hs))) ∷ w)) (brInj ih)
+distribR2 {f = nil ∷ f} {cons x₁ g} {br (h ∷ hs)} rewrite consEndDistrib {x = hs} {y = lmap f (br (h ∷ hs))} {z = cons x₁ (g • (br (h ∷ hs)))} = let ih = distribR2 {f = f} {g = cons x₁ g} {h = br (h ∷ hs)}
+                      in cong (\w -> br (h ∷ (hs ++ w))) (brInj ih)
+
+distribR2 {f = cons x x₁ ∷ f} {cons x₂ g} {br (h ∷ hs)} = let ih = distribR2 {f = f} {g = cons x₂ g} {h = br (h ∷ hs)}
+                                                          in cong (\w -> br (cons x (x₁ • br (h ∷ hs)) ∷ w)) (brInj ih)
+distribR2 {f = br x ∷ f} {cons x₁ g} {br (h ∷ hs)} = let ih = distribR2 {f = f} {g = cons x₁ g} {h = br (h ∷ hs)}
+                                                     in cong (\w -> br (br (lmap x (br (h ∷ hs))) ∷ w)) (brInj ih)
+distribR2 {f = nil ∷ f} {br gs} {br (h ∷ hs)} rewrite symm (klist_assoc {x = hs} {y = lmap f (br (h ∷ hs))} {z = lmap gs (br (h ∷ hs))}) = let ih = distribR2 {f = f} {g = br gs} {h = br (h ∷ hs)} in cong (\w -> br (h ∷ (hs ++ w))) (brInj ih) 
+distribR2 {f = cons x x₁ ∷ f} {br gs} {br (h ∷ hs)} = let ih = distribR2 {f = f} {g = br gs} {h = br (h ∷ hs)} 
+                                                      in cong (\w -> br (cons x (x₁ • br (h ∷ hs)) ∷ w)) (brInj ih)
+distribR2 {f = br x ∷ f} {br gs} {br (h ∷ hs)} = let ih = distribR2 {f = f} {g = br gs} {h = br (h ∷ hs)}
+                                                 in cong (\w -> br (br (lmap x (br (h ∷ hs))) ∷ w)) (brInj ih)
 
 distrib : {A : Set} {f g h : NSR A} -> ((f ⊕ g) • h) ≡ (f • h) ⊕ (g • h)
 distrib {f = nil} {nil} {nil} = refl
@@ -192,12 +325,5 @@ distrib {f = br f} {nil} {br h} = distribR {f = f} {h = h}
 distrib {f = br x} {nil} {nil} rewrite lemma {x = x} = refl
 distrib {f = br x} {nil} {cons y ys} rewrite lemma2 {x = x} {y = y} {ys = ys} = refl
 distrib {f = br x} {g = g} {h = h} = distribR2 {f = x} {g = g} {h = h}
-{-
-distrib {f = br x} {cons y ys} {nil} = let ih = distrib {f = br x} {g = ys} {h = nil}
-                                       in {!!}
-distrib {f = br x} {cons x₁ g} {cons x₂ h} = {!!}
-distrib {f = br x} {cons x₁ g} {br x₂} = {!!}
-distrib {f = br x} {br x₁} {nil} = {!!}
-distrib {f = br x} {br x₁} {cons x₂ h} = {!!}
-distrib {f = br x} {br x₁} {br x₂} = {!!}
+
 -}
