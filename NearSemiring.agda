@@ -61,11 +61,11 @@ mutual
 
   lmap : forall {A : Set} -> ListT (NSR A) -> NSR A -> ListT (NSR A)
   lmap (Last nil nil) (br b) = b ++ b
-  lmap (Last nil y) (br b) = consEnd b (y • (br b))
-  lmap (Last x nil) (br b) = (x • (br b)) ∷ b
-  lmap (nil ∷ xs) (br b)   = b ++ (lmap xs (br b))
-  lmap (Last x y) b = Last (x • b) (y • b)
-  lmap (x ∷ xs) b = (x • b) ∷ (lmap xs b)
+  lmap (Last nil y)   (br b) = consEnd b (y • (br b))
+  lmap (Last x nil)   (br b) = (x • (br b)) ∷ b
+  lmap (Last x y)     b      = Last (x • b) (y • b)
+  lmap (nil ∷ xs) (br b)     = b ++ (lmap xs (br b))
+  lmap (x ∷ xs) b            = (x • b) ∷ (lmap xs b)
 
   lmapUnit : forall {A : Set} {l : ListT (NSR A)} -> lmap l nil ≡ l
   lmapUnit {l = Last nil nil} = refl
@@ -326,4 +326,98 @@ distrib {f = br x} {nil} {nil} rewrite lemma {x = x} = refl
 distrib {f = br x} {nil} {cons y ys} rewrite lemma2 {x = x} {y = y} {ys = ys} = refl
 distrib {f = br x} {g = g} {h = h} = distribR2 {f = x} {g = g} {h = h}
 
+{-
+lmap_assoc : {A : Set} {x : ListT (NSR A)} {y z : NSR A} -> lmap (lmap x y) z ≡ lmap x (y • z)
+lmap_assoc {x = Last nil nil} {nil} {nil} = refl
+lmap_assoc {x = Last nil nil} {nil} {cons x z} = refl
+lmap_assoc {x = Last nil nil} {nil} {br x} = refl
+lmap_assoc {x = Last nil nil} {cons x y} {nil} = refl
+lmap_assoc {x = Last nil nil} {cons x y} {cons x₁ z} = refl
+lmap_assoc {x = Last nil nil} {cons x y} {br x₁} = refl
+lmap_assoc {x = Last nil nil} {br (Last x xs)} {nil} = {!!}
+lmap_assoc {x = Last nil nil} {br (x ∷ x₁)} {nil} = {!!}
+lmap_assoc {x = Last nil nil} {br x} {cons x₁ z} = {!!}
+lmap_assoc {x = Last nil nil} {br x} {br x₁} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {nil} {nil} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {nil} {cons x₁ z} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {nil} {br x₁} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {cons x₁ y} {nil} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {cons x₁ y} {cons x₂ z} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {cons x₁ y} {br x₂} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {br x₁} {nil} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {br x₁} {cons x₂ z} = {!!}
+lmap_assoc {x = Last nil (cons x b)} {br x₁} {br x₂} = {!!}
+lmap_assoc {x = Last nil (br x)} {nil} {nil} = {!!}
+lmap_assoc {x = Last nil (br x)} {nil} {cons x₁ z} = {!!}
+lmap_assoc {x = Last nil (br x)} {nil} {br x₁} = {!!}
+lmap_assoc {x = Last nil (br x)} {cons x₁ y} {nil} = {!!}
+lmap_assoc {x = Last nil (br x)} {cons x₁ y} {cons x₂ z} = {!!}
+lmap_assoc {x = Last nil (br x)} {cons x₁ y} {br x₂} = {!!}
+lmap_assoc {x = Last nil (br x)} {br x₁} {nil} = {!!}
+lmap_assoc {x = Last nil (br x)} {br x₁} {cons x₂ z} = {!!}
+lmap_assoc {x = Last nil (br x)} {br x₁} {br x₂} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {nil} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {nil} {cons x₁ z} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {nil} {br x₁} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {cons x₁ y} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {cons x₁ y} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {cons x₁ y} {br x₂} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {br x₁} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {br x₁} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (cons x a) nil} {br x₁} {br x₂} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {nil} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {nil} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {nil} {br x₂} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {cons x₂ y} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {cons x₂ y} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {cons x₂ y} {br x₃} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {br x₂} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {br x₂} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (cons x a) (cons x₁ b)} {br x₂} {br x₃} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {nil} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {nil} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {nil} {br x₂} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {cons x₂ y} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {cons x₂ y} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {cons x₂ y} {br x₃} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {br x₂} {nil} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {br x₂} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (cons x a) (br x₁)} {br x₂} {br x₃} = {!!}
+lmap_assoc {x = Last (br x) nil} {nil} {nil} = {!!}
+lmap_assoc {x = Last (br x) nil} {nil} {cons x₁ z} = {!!}
+lmap_assoc {x = Last (br x) nil} {nil} {br x₁} = {!!}
+lmap_assoc {x = Last (br x) nil} {cons x₁ y} {nil} = {!!}
+lmap_assoc {x = Last (br x) nil} {cons x₁ y} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (br x) nil} {cons x₁ y} {br x₂} = {!!}
+lmap_assoc {x = Last (br x) nil} {br x₁} {nil} = {!!}
+lmap_assoc {x = Last (br x) nil} {br x₁} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (br x) nil} {br x₁} {br x₂} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {nil} {nil} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {nil} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {nil} {br x₂} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {cons x₂ y} {nil} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {cons x₂ y} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {cons x₂ y} {br x₃} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {br x₂} {nil} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {br x₂} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (br x) (cons x₁ b)} {br x₂} {br x₃} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {nil} {nil} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {nil} {cons x₂ z} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {nil} {br x₂} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {cons x₂ y} {nil} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {cons x₂ y} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {cons x₂ y} {br x₃} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {br x₂} {nil} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {br x₂} {cons x₃ z} = {!!}
+lmap_assoc {x = Last (br x) (br x₁)} {br x₂} {br x₃} = {!!}
+lmap_assoc {x = x ∷ x₁} = {!!}
+
+assoc : {A : Set} {x y z : NSR A} -> (x • y) • z ≡ x • (y • z)
+assoc {x = nil} = refl
+assoc {x = cons x xs} = cong (\w -> cons x w) (assoc {x = xs})
+assoc {x = br x} = {!!}
+
 -}
+
+postulate 
+  assoc : {A : Set} {a b c : NSR A} -> a • (b • c) ≡ (a • b) • c

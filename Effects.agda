@@ -16,7 +16,7 @@ open import Data.List
 open import Context
 open import Data.Maybe
 
-open import pwdNearSemiring
+import NearSemiring 
 
 -- Value type
 data Type : Set where
@@ -31,7 +31,7 @@ record Effect : Set₁ where
       Carrier  : Set
       _•_      : Carrier -> Carrier -> Carrier
       _⊕_      : Carrier -> Carrier -> Carrier
-      _*       : Carrier -> Carrier
+      --_*       : Carrier -> Carrier
       I        : Carrier
 
       -- Efectful operations
@@ -39,9 +39,9 @@ record Effect : Set₁ where
 
       right-unit : forall {e : Carrier} -> (e • I) ≡ e
       left-unit  : forall {e : Carrier} -> (I • e) ≡ e
-      --assoc      : forall {a b c : Carrier} -> (a • (b • c)) ≡ ((a • b) • c)
-      dist       : forall {f g e : Carrier} -> (f ⊕ g) • e ≡ (f • e) ⊕ (g • e)
-      fixy       : forall {f : Carrier} -> f * ≡ f • (f *)
+      assoc      : forall {a b c : Carrier} -> (a • (b • c)) ≡ ((a • b) • c)
+      dist       : forall {f g h : Carrier} -> (f ⊕ g) • h ≡ (f • h) ⊕ (g • h)
+      --fixy       : forall {f : Carrier} -> f * ≡ f • (f *)
 
 open Effect
 
@@ -94,37 +94,36 @@ data _,_!-_,_ (eff : Effect) : (Gam : Context Type) -> Type -> (Carrier eff) -> 
 
 
 {- State Effects -}
-
 mutual
+
+  NSR = NearSemiring.NSR
+
   stEff = record
-    { Carrier    = List StateEff;
-      _•_        = _++_;
-      I          = [];
+    { Carrier    = NSR StateEff;
+      _•_        = NearSemiring._•_;
+      _⊕_        = NearSemiring._⊕_;
+      I          = NearSemiring.nil;
       operations = STOps;
 
       left-unit = refl;
-      right-unit = right-unit-list
-      --assoc = assoc-list
+      right-unit = NearSemiring.unitR;
+      dist = NearSemiring.distrib;
+      assoc = assocy
      }
+
+  assocy : {A : Set} {a b c : NearSemiring.NSR A} -> NearSemiring._•_ a (NearSemiring._•_ b c) ≡ NearSemiring._•_ (NearSemiring._•_ a b) c
+  assocy {A} {a} {b} {c} = NearSemiring.assoc {A} {a} {b} {c}
 
   data StateEff : Set where
     Get  : (t : Type) -> StateEff
     Put  : (t : Type) -> StateEff
 
-  right-unit-list : forall {e : List StateEff} -> (e ++ []) ≡ e
-  right-unit-list {[]} = refl
-  right-unit-list {x ∷ xs} = cong (\xs -> x ∷ xs) (right-unit-list {xs})
+  single : StateEff -> NSR StateEff
+  single x = NearSemiring.cons x NearSemiring.nil
 
-  assoc-list : forall {a b c : Carrier stEff} -> ((_•_ stEff) a ((_•_ stEff) b c)) ≡ ((_•_ stEff) ((_•_ stEff) a b) c)
-  assoc-list {[]} = refl
-  assoc-list {x ∷ xs} = cong (\xs -> x ∷ xs) (assoc-list {xs})
+  pure : NSR StateEff
+  pure = NearSemiring.nil
 
-  single : StateEff -> List StateEff
-  single x = Data.List.[ x ]
-
-  pure : List StateEff
-  pure = Data.List.[]
-
-  data STOps : Maybe (Pair (Context Type) Type)  -> Context Type -> Type -> List StateEff -> Set where
+  data STOps : Maybe (Pair (Context Type) Type)  -> Context Type -> Type -> NSR StateEff -> Set where
     Get  : forall {Γ t} -> STOps nothing Γ t (single (Get t))
     Put  : forall {Γ t} -> STOps (just (Γ , t)) Γ unit (single (Put t))
