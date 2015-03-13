@@ -110,13 +110,13 @@ mutual
                       -> -----------------------------------------------
                           Γ * ((Σ \\ k) , ⊕ Si) |- proc
 
-      -- Select - by value
-      _◁[_]∙_ : forall {Γ Σ n} {S : SType} {Ls : Vec String n}
+      -- Select - by value (label determined dynamically by a value)
+      _◁[_]∙_ : forall {Γ Σ n} {S : SType} {Si : Vec (Pair String SType) n}
 
-                         (k : S <: Σ) (v : Γ * Σ |- val nat) 
+                         (k : (S) <: Σ) (v : Γ * Σ |- val nat) 
                          (p : Γ * Σ |- proc) 
                       -> ------------------------------------------
-                          Γ * ((Σ \\ k) , ⊕ (Data.Vec.map (\l -> (l , S)) Ls)) |- proc
+                          Γ * ((Σ \\ k) , ⊕ Si) |- proc
 
       -- End the process
       nil : forall {Γ n}  -> --------------------------

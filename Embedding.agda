@@ -125,7 +125,8 @@ embedInterm {eff} {Γ} {F = .((_•_ eff) f ((_⊕_ eff) g h))} {G} {emb} (case 
            en2 = embedInterm {eff} {Γ , nat} {F = h} {G = G} {emb} n2
            
            ea0 = _!<_>∙_ (inl here) (var {Γ = map interpT Γ , nat} {Σ = Em} here) (nil {n = 2})
-           ea1 = _◁[_]∙_ {S = [ nat ]!∙ end} {Ls = "LL" ∷ "RR" ∷ []} here (var {Γ = map interpT Γ , nat} here) ea0
+           Sii = ("LL" , [ nat ]!∙ end) ∷ ("RR" , [ nat ]!∙ end) ∷ []
+           ea1 = _◁[_]∙_ {S = [ nat ]!∙ end} {Si = Sii} here (var {Γ = map interpT Γ , nat} here) ea0
            ea2 = _?[-]∙_ (there here) ea1
 
            ebA0 = weakenG {wT = nat} (weaken {wS = end} (weaken {wS = end} en1))
@@ -141,8 +142,8 @@ embedInterm {eff} {Γ} {F = .((_•_ eff) f ((_⊕_ eff) g h))} {G} {emb} (case 
            ebB4 = restrict ebB3 (th (th (th (th here)))) (there here) {refl}
 
            deVec = Cons (exchg ebA4) (Cons (exchg ebB4) [])
-           Sii = ("LL" , [ nat ]?∙ end) ∷ ("RR" , [ nat ]?∙ end) ∷ []
-           eb0 = _▷[_] {Si = Sii} here deVec 
+           SiiD = ("LL" , [ nat ]?∙ end) ∷ ("RR" , [ nat ]?∙ end) ∷ []
+           eb0 = _▷[_] {Si = SiiD} here deVec 
            eb1 = here [ there here ]∙ (weaken {wS = end} eb0)
 
            ec0 = par eb1 ea2
