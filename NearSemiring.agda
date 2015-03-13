@@ -421,3 +421,13 @@ assoc {x = br x} = {!!}
 
 postulate 
   assoc : {A : Set} {a b c : NSR A} -> a • (b • c) ≡ (a • b) • c
+
+pureInverseL : {A : Set} {f g : NSR A} -> (f • g ≡ nil) -> (f ≡ nil)
+pureInverseL {f = nil} refl = refl
+pureInverseL {f = cons x f} ()
+pureInverseL {f = br x} ()
+
+pureInverseR : {A : Set} {f g : NSR A} -> (f • g ≡ nil) -> (g ≡ nil)
+pureInverseR {f = nil} refl = refl
+pureInverseR {f = cons x f} ()
+pureInverseR {f = br x} ()

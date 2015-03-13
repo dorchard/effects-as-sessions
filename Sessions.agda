@@ -13,6 +13,7 @@ open import Data.Nat
 open import Context
 open import Data.Vec
 open import Data.String
+open import Data.Bool
 open import Data.Fin using (Fin; zero; suc)
 
 mutual 
@@ -29,7 +30,7 @@ mutual
     [_]?∙_ : {i : Size} -> VType -> SType {i} -> SType {↑ i}
     ⊕_     : {n : ℕ} {i : Size} (vs : Vec (Pair String (SType {i})) n) -> SType {↑ i}
     &_     : {n : ℕ} {i : Size} (vs : Vec (Pair String (SType {i})) n) -> SType {↑ i}
-    !_     : {i : Size} -> SType {i} -> SType {↑ i}
+    *_     : {i : Size} -> SType {i} -> SType {↑ i}
     end    : {i : Size} -> SType {↑ i}
 
 -- Process types
@@ -43,7 +44,7 @@ dual ([ V ]!∙ P) = [ V ]?∙ (dual P)
 dual ([ V ]?∙ P) = [ V ]!∙ (dual P)
 dual (⊕_ vs) = &_ (Data.Vec.map (\x -> ( pi1 x , dual (pi2 x))) vs)
 dual (&_ vs) = ⊕_ (Data.Vec.map (\x -> ( pi1 x , dual (pi2 x))) vs)
-dual (! P) = !(dual P)
+dual (* P) = * (dual P)
 dual end = end
 
 -- Construct a session environment of size n, where each channel has type 'end'
@@ -109,6 +110,14 @@ mutual
                       -> -----------------------------------------------
                           Γ * ((Σ \\ k) , ⊕ Si) |- proc
 
+      -- Select - by value
+      _◁[_]∙_ : forall {Γ Σ n} {S : SType} {Ls : Vec String n}
+
+                         (k : S <: Σ) (v : Γ * Σ |- val nat) 
+                         (p : Γ * Σ |- proc) 
+                      -> ------------------------------------------
+                          Γ * ((Σ \\ k) , ⊕ (Data.Vec.map (\l -> (l , S)) Ls)) |- proc
+
       -- End the process
       nil : forall {Γ n}  -> --------------------------
                               Γ * (allEnd {n}) |- proc
@@ -148,8 +157,10 @@ mutual
 {- Structural transformations on session terms -}
 postulate
   weaken : forall {Γ Σ wS pt} -> (e : Γ * Σ |- pt) -> Γ * (Σ , wS) |- pt
+  weakenG : forall {Γ Σ wT pt} -> (e : Γ * Σ |- pt) -> (Γ , wT) * Σ |- pt
   exchg : forall {Γ Σ S T pt} -> (e : Γ * ((Σ , S), T) |- pt) -> Γ * ((Σ , T) , S) |- pt
   exchgE : forall {Γ Σ R S T pt} -> (e : Γ * (((Σ , S), T), R) |- pt) -> Γ * (((Σ , T) , S), R) |- pt
+  exchgEF : forall {Γ Σ R S T pt} -> (e : Γ * (((Σ , S), T), R) |- pt) -> Γ * (((Σ , R) , T), S) |- pt
   weakenE : forall {Γ Σ S T pt} -> (e : Γ * (Σ , S) |- pt) -> Γ * ((Σ , T), S) |- pt
 
 {- Example embedding of [ABS] -}

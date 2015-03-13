@@ -28,7 +28,7 @@ record Effect : Set₁ where
     infixl 7 _•_
     field
       {- Monoid -}
-      Carrier  : Set
+      Carrier  : Set 
       _•_      : Carrier -> Carrier -> Carrier
       _⊕_      : Carrier -> Carrier -> Carrier
       --_*       : Carrier -> Carrier
@@ -39,9 +39,14 @@ record Effect : Set₁ where
 
       right-unit : forall {e : Carrier} -> (e • I) ≡ e
       left-unit  : forall {e : Carrier} -> (I • e) ≡ e
-      assoc      : forall {a b c : Carrier} -> (a • (b • c)) ≡ ((a • b) • c)
-      dist       : forall {f g h : Carrier} -> (f ⊕ g) • h ≡ (f • h) ⊕ (g • h)
+      assoc      : (a b c : Carrier) -> (a • (b • c)) ≡ ((a • b) • c)
+      dist       : (f g h : Carrier) -> (f ⊕ g) • h ≡ (f • h) ⊕ (g • h)
       --fixy       : forall {f : Carrier} -> f * ≡ f • (f *)
+
+      {- The following two lemmas are used in the pure embedding -}
+      -- If the composition of two effects is pure, then each effect is also pure.
+      pureInverseL : (f g : Carrier) -> (f • g ≡ I) -> f ≡ I
+      pureInverseR : (f g : Carrier) -> (f • g ≡ I) -> g ≡ I
 
 open Effect
 
@@ -59,22 +64,11 @@ data _,_!-_,_ (eff : Effect) : (Gam : Context Type) -> Type -> (Carrier eff) -> 
                          -> -------------------------------------------
                                    eff ,        Γ !- τ , ((_•_ eff) f g)
 
-
-  op : forall {Γ τ f Γ' τ'} 
-                (op : operations eff (just (Γ' , τ')) Γ τ f) (x : eff , Γ' !- τ' , (I eff))
-             -> --------------------------------------------------------------------------
-                     eff , Γ !- τ , f
-
-  const : forall {Γ τ f} 
-                (op : operations eff nothing Γ τ f)
-             -> --------------------------------------
-                     eff , Γ !- τ , f
-
   case : forall {Γ τ f g h}
-                (m  : eff , Γ !- nat , f)
-                (n1 : eff , Γ !- τ   , g)
-                (n2 : eff , Γ !- τ   , h)
-             -> -----------------------------
+                (m  : eff , Γ         !- nat , f)
+                (n1 : eff , Γ         !- τ   , g)
+                (n2 : eff , (Γ , nat) !- τ   , h)
+             -> -----------------------------------------------
                    eff , Γ !- τ , ((_•_ eff) f ((_⊕_ eff) g h))
 
 
@@ -98,6 +92,11 @@ mutual
 
   NSR = NearSemiring.NSR
 
+  data StateEff : Set where
+    Get  : (t : Type) -> StateEff
+    Put  : (t : Type) -> StateEff
+
+  stEff : Effect 
   stEff = record
     { Carrier    = NSR StateEff;
       _•_        = NearSemiring._•_;
@@ -107,16 +106,11 @@ mutual
 
       left-unit = refl;
       right-unit = NearSemiring.unitR;
-      dist = NearSemiring.distrib;
-      assoc = assocy
+      dist = \a b c -> NearSemiring.distrib {f = a} {g = b} {h = c};
+      assoc = \a b c -> NearSemiring.assoc {a = a} {b} {c};
+      pureInverseL = \f g -> NearSemiring.pureInverseL {f = f} {g = g};
+      pureInverseR = \f g -> NearSemiring.pureInverseR {f = f} {g = g}
      }
-
-  assocy : {A : Set} {a b c : NearSemiring.NSR A} -> NearSemiring._•_ a (NearSemiring._•_ b c) ≡ NearSemiring._•_ (NearSemiring._•_ a b) c
-  assocy {A} {a} {b} {c} = NearSemiring.assoc {A} {a} {b} {c}
-
-  data StateEff : Set where
-    Get  : (t : Type) -> StateEff
-    Put  : (t : Type) -> StateEff
 
   single : StateEff -> NSR StateEff
   single x = NearSemiring.cons x NearSemiring.nil
