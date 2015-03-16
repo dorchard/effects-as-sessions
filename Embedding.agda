@@ -40,6 +40,7 @@ record Embedding (eff : Effect) : Set where
 
    purityToEnd : interpEff (I eff) ≡ end
    altToBranch : (f g : Carrier eff) -> 
+                    -- & "alt" , .... ? hmm subtypes probably need to add
                     interpEff (_⊕_ eff f g) ≡ ⊕ (("L" , interpEff f) ∷ 
                                                  ("R" , interpEff g) ∷ [])
 

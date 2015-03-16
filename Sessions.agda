@@ -23,6 +23,9 @@ mutual
     nat  : VType
     sess : forall {i : Size} -> SType {i} -> VType
 
+      -- in the future, could do a polyadic form with a Context of VType, rather that just one
+    def : forall {i : Size} -> VType -> Context (SType {i}) -> VType
+
   {- (Sized) session types. The size is used to prove termination
      of dual -}
   data SType : {i : Size} -> Set where
@@ -141,6 +144,27 @@ mutual
                                         {prf : (dual s) ≡ sbar}
                                       -> --------------------------
                                           Γ * (Σ \\ x) \\ xbar |- t
+
+      -- Def
+      def : forall {Γ Σ t ss}   (p : ((Γ , def t ss) , t) * (Σ +++ ss) |- proc)
+                                (q : (Γ , def t ss) * Σ |- proc)
+                             -> ------------------------------------
+                                  Γ * Σ |- proc
+ 
+      -- Dvar
+      dvar : forall {Γ n t vt ss}   (e : Γ * allEnd {n} |- val vt)
+                               -> ----------------------------------------------
+                                   (Γ , def t ss) * (ss +++ allEnd {n}) |- proc
+
+
+      -- Subtyping
+      subtype : forall {Γ Σ t n m} 
+                             {Si : Vec (Pair String SType) n}
+                             {Ti : Vec (Pair String SType) m}
+                             (k : ⊕ Si <: Σ)
+                             (p : Γ * Σ |- t)
+                          -> -----------------------------------
+                             Γ * (Σ \\ k) , ⊕ (Si Data.Vec.++ Ti) |- t
 
       -- Value constants and operations
 
