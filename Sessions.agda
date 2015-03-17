@@ -157,7 +157,7 @@ mutual
                                    (Γ , def t ss) * (ss +++ allEnd {n}) |- proc
 
 
-      -- Subtyping
+      -- Subtyping on selections
       subtype : forall {Γ Σ t n m} 
                              {Si : Vec (Pair String SType) n}
                              {Ti : Vec (Pair String SType) m}

@@ -41,8 +41,8 @@ record Embedding (eff : Effect) : Set where
    purityToEnd : interpEff (I eff) ≡ end
    altToBranch : (f g : Carrier eff) -> 
                     -- & "alt" , .... ? hmm subtypes probably need to add
-                    interpEff (_⊕_ eff f g) ≡ ⊕ (("L" , interpEff f) ∷ 
-                                                 ("R" , interpEff g) ∷ [])
+                    interpEff (_⊕_ eff f g) ≡ ⊕ (("alt" , ⊕ (("L" , interpEff f) ∷ 
+                                                             ("R" , interpEff g) ∷ [])) ∷ [])
 
    -- Interpretation of operations
    opEmbed : (Γ : Context Type) -> (τ : Type) -> (F : Carrier eff) 
@@ -145,9 +145,12 @@ embedInterm {eff} {Γ} {F = .((_•_ eff) f ((_⊕_ eff) g h))} {G} {emb} (case 
            deVec = Cons (exchg ebA4) (Cons (exchg ebB4) [])
            SiiD = ("LL" , [ nat ]?∙ end) ∷ ("RR" , [ nat ]?∙ end) ∷ []
            eb0 = _▷[_] {Si = SiiD} here deVec 
-           eb1 = here [ there here ]∙ (weaken {wS = end} eb0)
+           Sa = ("alt" , ⊕ (("L" , interpEff emb (_•_ eff g G)) ∷
+                            ("R" , interpEff emb (_•_ eff h G)) ∷ []))
+           eb1 = _◁_∙_ {S = Sa} {n = 1} {Si = Sa ∷ []} (there here) here eb0
+           eb2 = here [ here ]∙ (weaken {wS = end} eb1)
 
-           ec0 = par eb1 ea2
+           ec0 = par eb2 ea2
            ec1 = par ec0 em
 
            ec2 = restrict ec1 (th (th (th here))) (th (th here)) {refl}
@@ -155,7 +158,7 @@ embedInterm {eff} {Γ} {F = .((_•_ eff) f ((_⊕_ eff) g h))} {G} {emb} (case 
            prf = cong (\w -> [ sess w ]!∙ end)
                         (trans (cong (\w -> interpEff emb w) (dist eff g h G))
                                 (altToBranch emb (_•_ eff g G) (_•_ eff h G)))
-           ec4 = restrict ec3 (th (th here)) here {symm prf}
+           ec4 = restrict ec3 (th (th here)) here {symm prf} 
            ec5 = exchg ec4
        in ec5
 
