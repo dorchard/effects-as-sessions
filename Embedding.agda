@@ -22,42 +22,46 @@ open import Data.Maybe hiding (map)
 open import Data.Vec hiding (map;_++_)
 open import Relation.Binary.PropositionalEquality using (trans;cong;inspect;[_]) 
 
-{- Embed types -}
-interpT : Type -> VType
-interpT nat = nat
-interpT unit = unit
+mutual 
+  {- Abstracted interface for embedding various kinds of effect system -}
+  record Embedding (eff : Effect) : Set where
+    field
+    -- Interpretation of effect annotations
+      interpEff :  (Carrier eff) -> SType 
 
-{- Embed memership witnessess -}
-interpMem : forall {Γ τ} -> (mem : τ <: Γ) -> (interpT τ <: (map interpT Γ))
-interpMem here = here
-interpMem (there mem) = there (interpMem mem)
+      purityToEnd : interpEff (I eff) ≡ end
+      altToBranch : (f g : Carrier eff) -> 
+                       -- & "alt" , .... ? hmm subtypes probably need to add
+                       interpEff (_⊕_ eff f g) ≡ ⊕ (("alt" , ⊕ (("L" , interpEff f) ∷ 
+                                                                ("R" , interpEff g) ∷ [])) ∷ [])
 
-{- Abstracted interface for embedding various kinds of effect system -}
-record Embedding (eff : Effect) : Set where
-  field
-   -- Interpretation of effect annotations
-   interpEff :  (Carrier eff) -> SType 
+    -- Interpretation of operations
+      opEmbed : (Γ : Context (Type (Carrier eff))) -> (τ : Type (Carrier eff)) -> (F : Carrier eff) 
+              -> (Γ' : Context (Type (Carrier eff))) -> (τ' : Type (Carrier eff)) -> {G : Carrier eff} 
+              -> (op : operations eff (just (Γ' , τ')) Γ τ F) 
+              -> (x : eff , Γ' !- τ' , (I eff)) 
+              -> (map interpT Γ * (((Em , [ interpT τ ]!∙ end) , [ sess (interpEff (_•_ eff F G)) ]?∙ end), [ sess (interpEff G) ]!∙ end) |- proc)
 
-   purityToEnd : interpEff (I eff) ≡ end
-   altToBranch : (f g : Carrier eff) -> 
-                    -- & "alt" , .... ? hmm subtypes probably need to add
-                    interpEff (_⊕_ eff f g) ≡ ⊕ (("alt" , ⊕ (("L" , interpEff f) ∷ 
-                                                             ("R" , interpEff g) ∷ [])) ∷ [])
+     -- Interpretation of constants
+      constEmbed : (Γ : Context (Type (Carrier eff))) -> (τ : Type (Carrier eff)) -> (F : Carrier eff) -> {G : Carrier eff} 
+                  -> (op : operations eff nothing Γ τ F)
+                  -> (map interpT Γ * (((Em , [ interpT τ ]!∙ end) , [ sess (interpEff (_•_ eff F G)) ]?∙ end), [ sess (interpEff G) ]!∙ end) |- proc)
 
-   -- Interpretation of operations
-   opEmbed : (Γ : Context Type) -> (τ : Type) -> (F : Carrier eff) 
-          -> (Γ' : Context Type) -> (τ' : Type) -> {G : Carrier eff} 
-          -> (op : operations eff (just (Γ' , τ')) Γ τ F) 
-          -> (x : eff , Γ' !- τ' , (I eff)) 
-          -> (map interpT Γ * (((Em , [ interpT τ ]!∙ end) , [ sess (interpEff (_•_ eff F G)) ]?∙ end), [ sess (interpEff G) ]!∙ end) |- proc)
+  {- Embed types -}
+  interpT : {eff : Effect} {emb : Embedding eff} {E : Set} -> Type E -> VType
+  interpT nat = nat
+  interpT unit = unit -- [ ]!∙ [ ]!∙ 
+  interpT (s -[ f ]-> t) = sess ([ interpT s ]!∙ 
+                                -- [ sess ([ interpEff eff (_•_ f g) ]?∙ end) ]!∙ 
+                                -- [ sess ([ interpEff eff g ]!∙ end) ]!∙ 
+                                 [ sess ([ interpT t ]!∙ end) ]!∙ end)
 
-   -- Interpretation of constants
-   constEmbed : (Γ : Context Type) -> (τ : Type) -> (F : Carrier eff) -> {G : Carrier eff} 
-            -> (op : operations eff nothing Γ τ F)
-            -> (map interpT Γ * (((Em , [ interpT τ ]!∙ end) , [ sess (interpEff (_•_ eff F G)) ]?∙ end), [ sess (interpEff G) ]!∙ end) |- proc)
+  {- Embed memership witnessess -}
+  interpMem : forall {Γ τ} -> (mem : τ <: Γ) -> (interpT τ <: (map interpT Γ))
+  interpMem here = here
+  interpMem (there mem) = there (interpMem mem)
 
 open Embedding
-
 
 {- Core intermeddiate embedding -}
 {- This definition is very explicit in parts to make it easier to understand -} 
@@ -161,6 +165,27 @@ embedInterm {eff} {Γ} {F = .((_•_ eff) f ((_⊕_ eff) g h))} {G} {emb} (case 
            ec4 = restrict ec3 (th (th here)) here {symm prf} 
            ec5 = exchg ec4
        in ec5
+
+-- fix
+embedInterm {eff} {Γ} {F = .((_* eff) (_•_ eff f g))} {G} {emb} (fix {.Γ} {τ} {f} {g} m) = 
+  let e = embedInterm {eff} {Γ} {F = g} {G = G} {emb} m
+      -- def
+--def F(e1,e2,r) = νq,s,ea,eb.((|M|)ei,ea_q | F(ea,eb,s) | q?(y).s?(x).y!<x,eb,e2,r>)
+--in F(ei,eo,r)
+      ea = dvar {t = unit} {ss = {!!}} unit
+
+      eb0 = _<->∙_ here (nil {n = 3})
+      eb1 = _<->∙_ (th here) eb0
+      eb2 = _<->∙_ (th here) eb1
+      eb3 = _!<_>∙_ {Σ2 = Em} (inl (th here)) (var here) eb2
+      eb4 = _?[-]∙_ (th (th (th (th (here))))) eb3
+      eb5 = _[_]∙_ (th (th (th (th (th here))))) (there here) eb4
+  in {!!}
+
+embedInterm {eff} {Γ} {F = .(I eff)} {G} {emb} (abs {.Γ} {σ} {τ} {f} m) = 
+  let e = embedInterm {eff} {Γ , σ} {F = f} {G = I eff} {emb} m
+  
+  in {!!}
 
 {- Top-level embedding -}
 embed : forall {eff : Effect} {Γ τ} {F : Carrier eff} {emb : Embedding eff}

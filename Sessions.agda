@@ -29,12 +29,12 @@ mutual
   {- (Sized) session types. The size is used to prove termination
      of dual -}
   data SType : {i : Size} -> Set where
-    [_]!∙_ : {i : Size} -> VType -> SType {i} -> SType {↑ i}
-    [_]?∙_ : {i : Size} -> VType -> SType {i} -> SType {↑ i}
-    ⊕_     : {n : ℕ} {i : Size} (vs : Vec (Pair String (SType {i})) n) -> SType {↑ i}
-    &_     : {n : ℕ} {i : Size} (vs : Vec (Pair String (SType {i})) n) -> SType {↑ i}
-    *_     : {i : Size} -> SType {i} -> SType {↑ i}
-    end    : {i : Size} -> SType {↑ i}
+    [_]!∙_ : forall  {i : Size} -> VType -> SType {i}  -> SType {↑ i} 
+    [_]?∙_ : forall  {i : Size} -> VType -> SType {i}  -> SType {↑ i} 
+    ⊕_     : forall  {n : ℕ} {i : Size} (vs : Vec (Pair String (SType {i} )) n) -> SType {↑ i} 
+    &_     : forall  {n : ℕ} {i : Size} (vs : Vec (Pair String (SType {i} )) n) -> SType {↑ i} 
+    *_     : forall  {i : Size} -> SType {i}  -> SType {↑ i} 
+    end    : forall  {i : Size} -> SType {↑ i} 
 
 -- Process types
 data PType : Set where
@@ -42,7 +42,7 @@ data PType : Set where
   proc : PType
   
 -- Session duality
-dual : {i : Size} -> SType {i} → SType {i}
+dual : forall  {i : Size} -> SType {i}  → SType {i} 
 dual ([ V ]!∙ P) = [ V ]?∙ (dual P)
 dual ([ V ]?∙ P) = [ V ]!∙ (dual P)
 dual (⊕_ vs) = &_ (Data.Vec.map (\x -> ( pi1 x , dual (pi2 x))) vs)
@@ -51,19 +51,19 @@ dual (* P) = * (dual P)
 dual end = end
 
 -- Construct a session environment of size n, where each channel has type 'end'
-allEnd : {n : ℕ} -> Context SType
-allEnd {zero} = Em
-allEnd {suc n} = (allEnd {n}) , end
+allEnd : forall  {n : ℕ} -> Context (SType)
+allEnd {n = zero} = Em
+allEnd {n = suc n} = (allEnd {n = n}) , end
 
 mutual
 
   {- Vector or derivations, each sharing the same value typing environment -}
-  data DerivVec : (Γ : Context VType) (Σ : Context SType) (n : ℕ) (vs : Vec SType n) (T : PType) -> Set where
+  data DerivVec : (Γ : Context VType) (Σ : Context (SType)) (n : ℕ) (vs : Vec (SType) n) (T : PType) -> Set where
     [] : forall {Γ Σ T} -> DerivVec Γ Σ zero [] T
-    Cons : forall {Γ Σ n ss T k} (x : Γ * (Σ , k) |- proc) (xs : DerivVec Γ Σ n ss T) -> DerivVec Γ Σ  (suc n) (k ∷ ss) T
+    Cons : forall {Γ : Context VType} {Σ : Context (SType {∞} )} {n : ℕ} {ss : Vec (SType {∞} ) n} {T} {k} -> (x : Γ * (Σ , k) |- proc) (xs : DerivVec Γ Σ n ss T) -> DerivVec Γ Σ  (suc n) (k ∷ ss) T
 
   {- Well-typed session terms -}
-  data _*_|-_ : (Γ : Context VType) -> (Σ : Context SType) -> (t : PType) -> Set where
+  data _*_|-_ : (Γ : Context VType) -> (Σ : Context (SType)) -> (t : PType) -> Set where
   
        -- Value receive
       _?[-]∙_ : forall {Γ Σ S t}

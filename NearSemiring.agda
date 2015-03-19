@@ -18,15 +18,34 @@ _++_ : forall {A : Set} -> ListT A -> ListT A -> ListT A
 (Last a b) ++ y = a ∷ (b ∷ y)
 (x ∷ xs) ++ ys = x ∷ (xs ++ ys)
 
-klist_assoc : forall {A : Set} {x y z : ListT A} -> (x ++ (y ++ z)) ≡ ((x ++ y) ++ z)
-klist_assoc {x = Last a b} = refl
-klist_assoc {x = x ∷ xs} {y} {z} rewrite klist_assoc {x = xs} {y = y} {z = z} = refl 
-
---klist_assoc_unit : forall {A : Set} {
+data NSR (A : Set) : Set where
+  nil : NSR A
+  cons : A -> NSR A -> NSR A
+  br : ListT (NSR A) -> NSR A
 
 consEnd : forall {A : Set} -> ListT A -> A -> ListT A
 consEnd (Last x y) z = x ∷ (Last y z)
 consEnd (x ∷ xs)   z = x ∷ (consEnd xs z)
+
+mutual
+  _•_ : forall {A : Set} -> NSR A -> NSR A -> NSR A
+  nil • x = x
+  cons x xs • ys = cons x (xs • ys)
+  br bs • y = br (lmap bs y)   
+
+  lmap : forall {A : Set} -> ListT (NSR A) -> NSR A -> ListT (NSR A)
+  lmap (Last nil nil) (br b) = b ++ b
+  lmap (Last nil y)   (br b) = consEnd b (y • (br b))
+  lmap (Last x nil)   (br b) = (x • (br b)) ∷ b
+  lmap (Last x y)     b      = Last (x • b) (y • b)
+  lmap (nil ∷ xs) (br b)     = b ++ (lmap xs (br b))
+  lmap (x ∷ xs) b            = (x • b) ∷ (lmap xs b)
+
+klist_assoc : forall {A : Set} {x y z : ListT A} -> (x ++ (y ++ z)) ≡ ((x ++ y) ++ z)
+klist_assoc {x = Last a b} = refl
+klist_assoc {x = x ∷ xs} {y} {z} rewrite klist_assoc {x = xs} {y = y} {z = z} = refl 
+
+
 
 consEndDistrib : forall {A : Set} {x y : ListT A} {z : A} -> consEnd (x ++ y) z ≡ x ++ (consEnd y z)
 consEndDistrib {x = Last x y} = refl
@@ -36,10 +55,7 @@ consDoub : forall {A : Set} {xs : ListT A} {a b : A} -> consEnd (consEnd xs a) b
 consDoub {xs = Last x xy} = refl
 consDoub {xs = x ∷ xs} = cong (\w -> x ∷ w) (consDoub {xs = xs})
 
-data NSR (A : Set) : Set where
-  nil : NSR A
-  cons : A -> NSR A -> NSR A
-  br : ListT (NSR A) -> NSR A
+
 
 postulate
   brInj : ∀ {A : Set} {x y : ListT (NSR A)} -> (br x ≡ br y) -> (x ≡ y)
@@ -53,19 +69,6 @@ x ⊕ y           = br (Last x y)
 
 
 mutual 
-  _•_ : forall {A : Set} -> NSR A -> NSR A -> NSR A
-  nil • x = x
-  cons x xs • ys = cons x (xs • ys)
-  br bs • y = br (lmap bs y)   
-
-
-  lmap : forall {A : Set} -> ListT (NSR A) -> NSR A -> ListT (NSR A)
-  lmap (Last nil nil) (br b) = b ++ b
-  lmap (Last nil y)   (br b) = consEnd b (y • (br b))
-  lmap (Last x nil)   (br b) = (x • (br b)) ∷ b
-  lmap (Last x y)     b      = Last (x • b) (y • b)
-  lmap (nil ∷ xs) (br b)     = b ++ (lmap xs (br b))
-  lmap (x ∷ xs) b            = (x • b) ∷ (lmap xs b)
 
   lmapUnit : forall {A : Set} {l : ListT (NSR A)} -> lmap l nil ≡ l
   lmapUnit {l = Last nil nil} = refl
@@ -334,8 +337,19 @@ lmap_assoc {x = Last nil nil} {nil} {br x} = refl
 lmap_assoc {x = Last nil nil} {cons x y} {nil} = refl
 lmap_assoc {x = Last nil nil} {cons x y} {cons x₁ z} = refl
 lmap_assoc {x = Last nil nil} {cons x y} {br x₁} = refl
-lmap_assoc {x = Last nil nil} {br (Last x xs)} {nil} = {!!}
-lmap_assoc {x = Last nil nil} {br (x ∷ x₁)} {nil} = {!!}
+lmap_assoc {x = Last nil nil} {br (Last nil nil)} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last nil (cons x b))} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last nil (br x))} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last (cons x a) nil)} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last (cons x a) (cons x₁ b))} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last (cons x a) (br x₁))} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last (br x) nil)} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last (br x) (cons x₁ b))} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (Last (br x) (br x₁))} {nil} = refl
+lmap_assoc {x = Last nil nil} {br (nil ∷ xs)} {nil} = let ih = lmap_assoc {x = Last nil nil} {y = br xs} {z = nil} 
+                                                      in {!!}
+lmap_assoc {x = Last nil nil} {br (cons x x₁ ∷ xs)} {nil} = {!!}
+lmap_assoc {x = Last nil nil} {br (br x ∷ xs)} {nil} = {!!}
 lmap_assoc {x = Last nil nil} {br x} {cons x₁ z} = {!!}
 lmap_assoc {x = Last nil nil} {br x} {br x₁} = {!!}
 lmap_assoc {x = Last nil (cons x b)} {nil} {nil} = {!!}
@@ -411,7 +425,9 @@ lmap_assoc {x = Last (br x) (br x₁)} {br x₂} {nil} = {!!}
 lmap_assoc {x = Last (br x) (br x₁)} {br x₂} {cons x₃ z} = {!!}
 lmap_assoc {x = Last (br x) (br x₁)} {br x₂} {br x₃} = {!!}
 lmap_assoc {x = x ∷ x₁} = {!!}
+-}
 
+{-
 assoc : {A : Set} {x y z : NSR A} -> (x • y) • z ≡ x • (y • z)
 assoc {x = nil} = refl
 assoc {x = cons x xs} = cong (\w -> cons x w) (assoc {x = xs})
